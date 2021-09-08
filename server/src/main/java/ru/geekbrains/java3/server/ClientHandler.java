@@ -32,7 +32,7 @@ public class ClientHandler {
                             String[] tokens = msg.split("\\s");
                             String nickname = server.getAuthService().getNickname(tokens[1], tokens[2]);
                             if (nickname != null && !server.isNicknameBusy(nickname)) {
-                                sendMsg("/auth " + nickname);
+                                sendMsg("/auth: прошло " + nickname);
                                 this.nickname = nickname;
                                 server.subscribe(this);
                                 break;
@@ -53,20 +53,20 @@ public class ClientHandler {
                             if (msg.startsWith("/changenick ")) {
                                 String newNickname = msg.split("\\s", 2)[1];
                                 if (newNickname.contains(" ")) {
-                                    sendMsg("Nickname cannot contain spaces");
+                                    sendMsg("Nickname неправильный формат");
                                     continue;
                                 }
                                 if (server.getAuthService().changeNickname(this.nickname, newNickname)) {
                                     this.nickname = newNickname;
                                     sendMsg("/changenick " + nickname);
-                                    sendMsg("Nickname has been changed");
+                                    sendMsg("Nickname был изменён");
                                     server.broadcastClientsList();
                                 } else {
-                                    sendMsg("Nickname is already taken");
+                                    sendMsg("Nickname уже используется");
                                 }
                             }
                         } else {
-                            server.broadcast(nickname + ": " + msg);
+                            server.broadcast(this.nickname, msg);
                         }
                     }
                 } catch (IOException e) {

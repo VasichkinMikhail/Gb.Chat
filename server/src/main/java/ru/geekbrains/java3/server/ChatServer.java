@@ -17,22 +17,22 @@ public class ChatServer {
         clients = new ArrayList<>();
 
         if (DataBase.run()) {
-            throw new RuntimeException("Unable to connect to the database");
+            throw new RuntimeException("Невозможно подключится!");
         }
         authService = new DataBaseAuth();
 
         try (ServerSocket serverSocket = new ServerSocket(8180)) {
-            System.out.println("SERVER: Server start...");
+            System.out.println("SERVER: запущен...");
             while (true) {
                 Socket socket = serverSocket.accept();
-                System.out.println("SERVER: Client connected...");
+                System.out.println("SERVER: Клиент подключился...");
                 new ClientHandler(socket,this);
             }
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
             DataBase.disconnect();
-            System.out.println("Server closed");
+            System.out.println("SERVER: закрыт");
         }
     }
 
@@ -49,20 +49,24 @@ public class ChatServer {
         }
     }
 
-    public void broadcast(String msg) {
+    public void broadcast(String sendNick, String msg) {
         for (ClientHandler client : clients) {
-            client.sendMsg(msg);
+            if (client.getNickname().equals(sendNick)) {
+                client.sendMsg("You: " + msg);
+            } else {
+                client.sendMsg(sendNick + ": " + msg);
+            }
         }
     }
 
     public void subscribe(ClientHandler clientHandler) {
-        System.out.println("SERVER: Client " + clientHandler.getNickname() + " login...");
+        System.out.println("SERVER: Клиент " + clientHandler.getNickname() + " login...");
         clients.add(clientHandler);
         broadcastClientsList();
     }
 
     public void unsubscribe(ClientHandler clientHandler) {
-        System.out.println("SERVER: Client " + clientHandler.getNickname() + " logout...");
+        System.out.println("SERVER: Клиент " + clientHandler.getNickname() + " logout...");
         clients.remove(clientHandler);
         broadcastClientsList();
     }
@@ -81,10 +85,14 @@ public class ChatServer {
     }
 
     public void sendMsgToClient(ClientHandler from, String nickTo, String msg) {
-        for (ClientHandler o : clients) {
-            if (o.getNickname().equals(nickTo)) {
-                o.sendMsg("от " + from.getNickname() + ": " + msg);
-                from.sendMsg("клиенту " + nickTo + ": " + msg);
+        if (from.getNickname().equals(nickTo)) {
+            from.sendMsg("Note: " + msg);
+            return;
+        }
+        for (ClientHandler client : clients) {
+            if (client.getNickname().equals(nickTo)) {
+                client.sendMsg(from.getNickname() + " whispered " + ": " + msg);
+                from.sendMsg("Ваш приватное сообщение для : " + nickTo + ": " + msg);
                 return;
             }
         }
