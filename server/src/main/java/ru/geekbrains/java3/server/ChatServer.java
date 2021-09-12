@@ -5,12 +5,16 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ChatServer {
 
     private final AuthService authService;
 
     private final List<ClientHandler> clients;
+
+    private ExecutorService clientsExecutorService;
 
 
     public ChatServer() {
@@ -20,6 +24,7 @@ public class ChatServer {
             throw new RuntimeException("Невозможно подключится!");
         }
         authService = new DataBaseAuth();
+        clientsExecutorService = Executors.newCachedThreadPool();
 
         try (ServerSocket serverSocket = new ServerSocket(8180)) {
             System.out.println("SERVER: запущен...");
@@ -34,6 +39,9 @@ public class ChatServer {
             DataBase.disconnect();
             System.out.println("SERVER: закрыт");
         }
+    }
+    public ExecutorService getClientsExecutorService() {
+        return clientsExecutorService;
     }
 
     public void broadcastClientsList() {
