@@ -4,12 +4,17 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ClientHandler {
     private  Socket socket;
     private  ChatServer server;
     private  DataInputStream in;
     private  DataOutputStream out;
+    private static final Logger logger = Logger.getLogger(DataBase.class.getName());
 
     public String getNickname() {
         return nickname;
@@ -19,6 +24,10 @@ public class ClientHandler {
 
 
     public ClientHandler(Socket socket, ChatServer server) {
+        logger.setLevel(Level.ALL);
+        Handler handler = new ConsoleHandler();
+        handler.setLevel(Level.ALL);
+        logger.addHandler(handler);
         try {
             this.server = server;
             this.socket = socket;
@@ -29,14 +38,16 @@ public class ClientHandler {
                     while (true) {
                         String msg = in.readUTF();
                         if (msg.startsWith("/auth ")) {
+                            logger.log(Level.FINE, "Пользователь пытается авторизироватся!");
                             String[] tokens = msg.split("\\s");
                             String nickname = server.getAuthService().getNickname(tokens[1], tokens[2]);
                             if (nickname != null && !server.isNicknameBusy(nickname)) {
-                                sendMsg("/auth: прошло " + nickname);
+                                sendMsg("/auth: онлайн " + nickname);
                                 this.nickname = nickname;
                                 server.subscribe(this);
                                 break;
                             }
+                            logger.log(Level.FINE, "Пользователь не смог авторизироватся!");
                         }
                     }
                     while (true) {
@@ -51,18 +62,24 @@ public class ClientHandler {
                                 server.sendMsgToClient(this, tokens[1], tokens[2]);
                             }
                             if (msg.startsWith("/changenick ")) {
+                                logger.log(Level.FINER,"Пользователь " + this.nickname + " пытается сменить свой nickname");
                                 String newNickname = msg.split("\\s", 2)[1];
-                                if (newNickname.contains(" ")) {
-                                    sendMsg("Nickname неправильный формат");
+                                if (!newNickname.matches("([a-zA-Z]+[0-9]*)|([а-яА-Я]+[0-9]*)")) {
+                                    sendMsg("/changenick:error Nickname должен содержать только буквы и цифры!");
+                                    logger.log(Level.FINER,"Пользователь  " + this.nickname +
+                                            " новый ник содержит не допустимые символы!");
                                     continue;
                                 }
                                 if (server.getAuthService().changeNickname(this.nickname, newNickname)) {
+                                    logger.log(Level.FINER,"Пользователь " + this.nickname +
+                                            " изменил свой nickname свой  " + newNickname);
                                     this.nickname = newNickname;
-                                    sendMsg("/changenick " + nickname);
-                                    sendMsg("Nickname был изменён");
+                                    sendMsg("/changenick: изменён " + nickname);
                                     server.broadcastClientsList();
                                 } else {
                                     sendMsg("Nickname уже используется");
+                                    logger.log(Level.FINER,"Пользователь " + this.nickname +
+                                            " nickname уже используется!");
                                 }
                             }
                         } else {
@@ -70,12 +87,15 @@ public class ClientHandler {
                         }
                     }
                 } catch (IOException e) {
+                    logger.log(Level.WARNING, e.getMessage(), e);
                     e.printStackTrace();
+
                 } finally {
                     ClientHandler.this.disconnect();
                 }
             });
         } catch (IOException e) {
+            logger.log(Level.SEVERE, e.getMessage(), e);
             e.printStackTrace();
         }
     }
@@ -84,6 +104,7 @@ public class ClientHandler {
         try {
             out.writeUTF(msg);
         } catch (IOException e) {
+            logger.log(Level.WARNING, e.getMessage(), e);
             e.printStackTrace();
         }
     }
@@ -94,16 +115,19 @@ public class ClientHandler {
         try {
             in.close();
         } catch (IOException e) {
+            logger.log(Level.SEVERE, e.getMessage(), e);
             e.printStackTrace();
         }
         try {
             out.close();
         } catch (IOException e) {
+            logger.log(Level.SEVERE, e.getMessage(), e);
             e.printStackTrace();
         }
         try {
             socket.close();
         } catch (IOException e) {
+            logger.log(Level.SEVERE, e.getMessage(), e);
             e.printStackTrace();
         }
     }
