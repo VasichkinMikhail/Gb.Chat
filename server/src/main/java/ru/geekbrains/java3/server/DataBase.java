@@ -1,6 +1,8 @@
 package ru.geekbrains.java3.server;
 
 import java.sql.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class DataBase{
     private static Connection connection;
@@ -8,20 +10,22 @@ public class DataBase{
     private static PreparedStatement getUserNicknameStatement;
     private static PreparedStatement changeUserNicknameStatement;
     private static PreparedStatement createUserStatement;
+    private static final Logger logger = Logger.getLogger(DataBase.class.getName());
 
 
     public static boolean run() {
+        logger.setLevel(Level.ALL);
         try {
             Class.forName("org.sqlite.JDBC");
             connection = DriverManager.getConnection("jdbc:sqlite:javadb.db");
-            System.out.println("База данных подключена");
+            logger.log(Level.INFO, "База данных подключена");
             statement = connection.createStatement();
             createTable();
             insert("Bob","321","Boby88");
             prepareAllStatement();
             return true;
         } catch (SQLException | ClassNotFoundException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         } finally {
             return false;
         }
@@ -66,7 +70,7 @@ public class DataBase{
             }
             rs.close();
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
         return nickname;
     }
@@ -75,12 +79,12 @@ public class DataBase{
         try {
             statement.close();
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
         try {
             connection.close();
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
     }
     public static boolean changeUserNickname(String currentNickname, String newNickname) {

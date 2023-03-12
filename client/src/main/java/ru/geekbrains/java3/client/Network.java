@@ -59,7 +59,7 @@ public class Network {
                 try {
                     while (true) {
                         String msg = in.readUTF();
-                        if (msg.startsWith("/auth ")) {
+                        if (msg.startsWith("/auth: прошло ")) {
                             callOnAuthenticated.callback(msg.split("\\s")[1]);
                             break;
                         }
